@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-page text-body font-sans antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+
+* {
+  border-color: theme('colors.border.DEFAULT');
+}
+
+::selection {
+  background: #C9A66B;
+  color: rgb(3 26 7);
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(28, 35, 31, 0.14);
+  border-radius: 999px;
+}
+.dark-scroll::-webkit-scrollbar-thumb {
+  background: rgba(201, 166, 107, 0.22);
+}
+
+button, a, input, select, textarea {
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease,
+              box-shadow .15s ease, opacity .15s ease, transform .1s ease;
+}
+
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible {
+  outline: 2px solid rgba(201, 166, 107, 0.55);
+  outline-offset: 1px;
+}
+
+@layer components {
+  .card-surface {
+    @apply bg-card border border-border rounded-xl shadow-card;
+  }
+  .dark-surface {
+    @apply bg-ink text-page;
+  }
+  .label-eyebrow {
+    @apply text-[10.5px] tracking-wider text-muted font-mono uppercase;
+  }
+  .field-label {
+    @apply block text-[11.5px] text-[#56594F] font-semibold mb-1.5;
+  }
+  .input-base {
+    @apply w-full bg-page border border-border-strong rounded-lg px-3.5 py-2.5 text-[13px] outline-none
+           focus:border-gold focus:bg-white transition-colors placeholder:text-faint;
+  }
+  .btn-primary {
+    @apply bg-ink text-page text-[12.5px] font-semibold px-4 py-2.5 rounded-lg
+           flex items-center justify-center gap-1.5 hover:opacity-90 active:scale-[.98]
+           transition-all disabled:opacity-50 disabled:pointer-events-none shadow-card;
+  }
+  .btn-gold {
+    @apply bg-gradient-to-b from-gold-bright to-gold text-ink text-[12.5px] font-semibold px-4 py-2.5 rounded-lg
+           flex items-center justify-center gap-1.5 hover:shadow-gold active:scale-[.98]
+           transition-all disabled:opacity-40 disabled:pointer-events-none;
+  }
+  .btn-outline {
+    @apply border border-border-strong text-body text-[12.5px] font-semibold px-4 py-2.5 rounded-lg
+           flex items-center justify-center gap-1.5 hover:bg-card-alt active:scale-[.98]
+           transition-all disabled:opacity-50 disabled:pointer-events-none bg-card;
+  }
+  .btn-outline-gold {
+    @apply border border-gold/60 text-[#8C6B2E] text-[12.5px] font-semibold px-4 py-2.5 rounded-lg
+           flex items-center justify-center gap-1.5 hover:bg-gold/10 active:scale-[.98]
+           transition-all disabled:opacity-40 disabled:pointer-events-none;
+  }
+  .btn-amethyst {
+    @apply bg-gradient-to-b from-amethyst-bright to-amethyst text-white text-[12.5px] font-semibold px-4 py-2.5 rounded-lg
+           flex items-center justify-center gap-1.5 hover:brightness-110 active:scale-[.98]
+           transition-all disabled:opacity-40 disabled:pointer-events-none;
+  }
+}

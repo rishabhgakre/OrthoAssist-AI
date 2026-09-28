@@ -1,0 +1,73 @@
+# ============================================
+# NEVER COMMIT THESE — secrets & credentials
+# ============================================
+.env
+.env.local
+*.env
+!.env.example
+ai_training
+# ============================================
+# Python
+# ============================================
+venv/
+env/
+.venv/
+
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# ============================================
+# Database files
+# ============================================
+*.db
+*.sqlite
+*.sqlite3
+
+# ============================================
+# Patient data — X-rays & walking videos
+# NEVER push real/test patient uploads to a public repo
+# ============================================
+backend/uploads/xrays/*
+backend/uploads/videos/*
+backend/uploads
+backend/reports
+!backend/uploads/xrays/.gitkeep
+!backend/uploads/videos/.gitkeep
+
+
+
+
+# Generated reports (contain patient data)
+backend/reports/
+*.pdf
+
+# ============================================
+# ML model weights (too large for git, download separately)
+# ============================================
+*.pt
+*.pth
+*.onnx
+*.h5
+backend/app/ai_structural/weights/*.pt
+!backend/app/ai_structural/weights/.gitkeep
+
+# ============================================
+# Frontend (Node.js / React)
+# ============================================
+frontend/node_modules/
+frontend/build/
+frontend/dist/
+frontend/.env
+
+# ============================================
+# IDE / OS junk
+# ============================================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+requirements.txt

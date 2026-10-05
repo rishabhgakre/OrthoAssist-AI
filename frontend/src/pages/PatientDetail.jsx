@@ -635,7 +635,7 @@ export default function PatientDetail() {
           <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-7 items-start">
             <div className="flex flex-col items-center">
               <ScoreRing
-                value={latestCori ? Math.round(latestCori.cori_score) : null}
+                value={latestCori ? latestCori.cori_score: null}
                 size={132} strokeWidth={11} onDark
                 color={
                   !latestCori ? '#C9A66B'

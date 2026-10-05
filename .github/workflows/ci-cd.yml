@@ -1,0 +1,131 @@
+# OrthoAssist AI — CI/CD.
+#
+# On every push/PR: build-checks both frontend and backend. A real `npm
+# run build` here would have caught, automatically and before merge, the
+# exact "missing icon export" bug that previously only surfaced live in
+# the browser — that's the actual point of this job, not a formality.
+#
+# On every push to main only: builds both Docker images and pushes them to
+# GitHub Container Registry (ghcr.io), tagged both `:latest` and
+# `:<commit-sha>` (the sha tag means you can always pin/roll back to an
+# exact previously-working build, not just "whatever :latest happens to be
+# right now").
+#
+# This workflow does NOT deploy anywhere by itself:
+#   - Render/Vercel: connect your GitHub repo directly in each dashboard
+#     and enable their own auto-deploy-on-push — that's genuinely simpler
+#     than reimplementing it here, and is what the deployment guide walks
+#     through.
+#   - Kubernetes: see the commented-out optional job at the bottom, which
+#     shows how to wire `kubectl set image` into this same workflow once
+#     you have a cluster and its credentials as a repo secret.
+
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  frontend-build-check:
+    name: Frontend build check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      # The real check: this is the exact command that fails loudly on a
+      # broken import (missing export, syntax error, etc.) instead of
+      # that only surfacing live in someone's browser after deploy.
+      - run: npm run build
+        env:
+          # A placeholder is fine here — this job only proves the build
+          # succeeds, it doesn't need to reach a real backend.
+          VITE_API_URL: https://placeholder.invalid
+
+  backend-lint:
+    name: Backend lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # ruff alone (not the full requirements.txt, which includes
+      # torch/mediapipe and would make this job take many minutes) — fast
+      # enough to run on every single push/PR, catches real errors
+      # (undefined names, bad syntax, unused imports) without needing the
+      # app's heavy ML dependencies installed at all.
+      - run: pip install ruff
+      - run: ruff check backend/app --select=F,E9
+
+  build-and-push-images:
+    name: Build & push Docker images
+    needs: [frontend-build-check, backend-lint]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/orthoassist-backend:latest
+            ghcr.io/${{ github.repository_owner }}/orthoassist-backend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          build-args: |
+            VITE_API_URL=${{ vars.VITE_API_URL }}
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/orthoassist-frontend:latest
+            ghcr.io/${{ github.repository_owner }}/orthoassist-frontend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Optional: if you're self-hosting on Kubernetes rather than
+      # Render/Vercel, uncomment this to have the cluster automatically
+      # pick up each new image after it's pushed above. Requires a
+      # `KUBE_CONFIG` repo secret (base64 of your kubeconfig) with access
+      # to the cluster.
+      #
+      # - name: Deploy to Kubernetes
+      #   run: |
+      #     echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > kubeconfig
+      #     export KUBECONFIG=kubeconfig
+      #     kubectl -n orthoassist set image deployment/backend backend=ghcr.io/${{ github.repository_owner }}/orthoassist-backend:${{ github.sha }}
+      #     kubectl -n orthoassist set image deployment/frontend frontend=ghcr.io/${{ github.repository_owner }}/orthoassist-frontend:${{ github.sha }}
+      #     kubectl -n orthoassist rollout status deployment/backend

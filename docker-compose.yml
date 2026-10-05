@@ -1,0 +1,72 @@
+# Runs the full stack locally with one command — same images, same
+# Dockerfiles, same migration step as production, so "works in
+# docker-compose" is a meaningful signal that it'll work deployed too.
+#
+#   docker compose up --build
+#
+# Then: frontend at http://localhost:5173, backend at http://localhost:8000
+# (interactive docs at http://localhost:8000/docs).
+#
+# NOTE on VITE_API_URL below: it's set to http://localhost:8000, NOT
+# http://backend:8000. That's not a typo — Vite bakes this into the JS
+# bundle that runs in your BROWSER, and your browser reaches the backend
+# through the port published to your host machine, not through Docker's
+# internal network (which only containers can see). "backend:8000" would
+# only be correct here if nginx itself were proxying API calls, which it
+# isn't in this setup (see frontend/nginx.conf).
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: orthoassist
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    user: "0:0"
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: development
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/orthoassist
+      SECRET_KEY: ${SECRET_KEY:-local-dev-secret-change-me}
+      FRONTEND_ORIGINS: http://localhost:5173
+      UPLOAD_DIR: /data/uploads
+    volumes:
+      # Named volume so uploaded X-rays/videos survive `docker compose
+      # down` / container recreation — exactly the persistence concern
+      # that mounting a Kubernetes PersistentVolumeClaim at this same
+      # UPLOAD_DIR path solves in the k8s/ manifests.
+      - backend_uploads:/data/uploads
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ""
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  db_data:
+  backend_uploads:

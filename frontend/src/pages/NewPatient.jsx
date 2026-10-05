@@ -83,17 +83,17 @@ export default function NewPatient() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="field-label">Age</label>
+              <label className="field-label relative top-1">Age</label>
               <input
                 required type="number" min="0" max="130"
                 value={form.age}
                 onChange={(e) => update('age', e.target.value)}
                 placeholder="e.g. 28"
-                className="input-base"
+                className="input-base focus:outline-none focus:ring-0"
               />
             </div>
             <div>
-              <label className="field-label">Gender</label>
+              <label className="field-label relative top-1">Gender</label>
               <select value={form.gender} onChange={(e) => update('gender', e.target.value)} className="input-base">
                 <option>Male</option>
                 <option>Female</option>

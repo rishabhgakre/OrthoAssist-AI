@@ -37,7 +37,7 @@ export function statusFromScore(score) {
 export function statusLabel(score) {
   if (score === null || score === undefined) return 'Pending'
   if (score >= 85) return 'Excellent'
-  if (score >= 70) return 'Strong'
+  if (score >= 70) return 'Good'
   if (score >= 50) return 'Moderate'
   return 'Needs attention'
 }

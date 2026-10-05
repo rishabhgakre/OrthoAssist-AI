@@ -1,0 +1,54 @@
+# Only needed if you're self-hosting the frontend via Kubernetes instead
+# of using Vercel (the simpler, recommended path for a static SPA — see
+# the deployment guide). Kept here so Kubernetes alone is a complete,
+# working deployment option if you'd rather not depend on Vercel at all.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: orthoassist
+spec:
+  replicas: 2  # stateless static content — safe to scale freely, unlike backend
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          # Built with --build-arg VITE_API_URL=https://your-backend-url
+          # pointed at wherever the backend Service is actually reachable
+          # from the PUBLIC INTERNET (your Ingress/LoadBalancer address or
+          # domain) — NOT the in-cluster "backend:8000" address, since this
+          # JS runs in visitors' browsers, outside the cluster entirely.
+          image: ghcr.io/YOUR_GITHUB_USERNAME/orthoassist-frontend:latest
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: orthoassist
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: 80

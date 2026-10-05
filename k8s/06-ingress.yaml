@@ -1,0 +1,50 @@
+# Only needed for the fully-self-hosted-on-k8s path (see 05-frontend-
+# deployment.yaml's note). Assumes an nginx-ingress-class controller is
+# already installed on the cluster (`ingressClassName: nginx` below) —
+# install one first if not (e.g. `helm install ingress-nginx ...`).
+#
+# Two separate subdomains rather than one domain with path-based routing
+# (/api vs /) — this matches exactly how the Vercel+Render path works too
+# (frontend and backend are genuinely two different deployed URLs either
+# way), so VITE_API_URL is simply "https://api.yourdomain.com" with no
+# path-rewriting complexity on either side.
+#
+# For TLS: install cert-manager and uncomment the annotation + tls block
+# below, or terminate TLS at your cloud load balancer instead and leave
+# this Ingress HTTP-only internally — either is fine, pick based on what
+# your cluster already has.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: orthoassist
+  namespace: orthoassist
+  annotations: {}
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  # tls:
+  #   - hosts:
+  #       - app.yourdomain.com
+  #       - api.yourdomain.com
+  #     secretName: orthoassist-tls
+  rules:
+    - host: app.yourdomain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+    - host: api.yourdomain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 8000

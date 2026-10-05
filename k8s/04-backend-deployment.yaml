@@ -1,0 +1,100 @@
+# Persistent volume for uploaded X-rays/videos — without this, every pod
+# restart (a deploy, a crash, a node reschedule) silently wipes every file
+# a doctor has ever uploaded, even though the DATABASE rows referencing
+# them survive fine. This is exactly the persistence gap plain
+# `docker run` / a bare Deployment with no volume has.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backend-uploads
+  namespace: orthoassist
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: orthoassist
+spec:
+  # IMPORTANT: stays at 1 as long as backend-uploads above is
+  # ReadWriteOnce (the default/only access mode most cloud providers'
+  # default StorageClass supports) — multiple pods cannot safely share one
+  # ReadWriteOnce volume across different nodes. To actually scale the
+  # backend horizontally, either (a) use a ReadWriteMany-capable
+  # StorageClass (AWS EFS, Azure Files, NFS-backed, etc.), or (b) move file
+  # storage off local disk entirely onto an object store (S3/R2/MinIO) —
+  # the more "cloud native" answer, but a real code change (routers/xray.py
+  # and gait.py currently write straight to local disk), not just a
+  # manifest change. Worth knowing as a documented limitation either way.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          # Replace with your actual pushed image — see
+          # .github/workflows/ci-cd.yml, which builds and pushes exactly
+          # this image on every push to main.
+          image: ghcr.io/YOUR_GITHUB_USERNAME/orthoassist-backend:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: backend-config
+            - secretRef:
+                name: backend-secret
+          volumeMounts:
+            - name: uploads
+              mountPath: /data/uploads
+          # Both probes hit the same /health endpoint (see backend/app/main.py)
+          # which checks real DB connectivity, not just "is the process up" —
+          # a pod that can't reach its database shouldn't receive traffic.
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+          # torch + opencv + mediapipe hold real memory during inference —
+          # these are starting points, not measured numbers; watch actual
+          # usage (`kubectl top pod`) under real traffic and adjust.
+          resources:
+            requests:
+              cpu: 250m
+              memory: 768Mi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: backend-uploads
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: orthoassist
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 8000
+      targetPort: 8000

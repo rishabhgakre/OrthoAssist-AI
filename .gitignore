@@ -1,6 +1,3 @@
-# ============================================
-# NEVER COMMIT THESE — secrets & credentials
-# ============================================
 .env
 .env.local
 *.env
@@ -10,15 +7,14 @@ ai_training
 # Python
 # ============================================
 venv/
+.venv
 env/
-.venv/
-
 __pycache__/
 *.pyc
 *.pyo
 *.egg-info/
 .pytest_cache/
-
+.env
 # ============================================
 # Database files
 # ============================================
@@ -32,16 +28,13 @@ __pycache__/
 # ============================================
 backend/uploads/xrays/*
 backend/uploads/videos/*
-backend/uploads
-backend/reports
 !backend/uploads/xrays/.gitkeep
 !backend/uploads/videos/.gitkeep
 
-
-
-
 # Generated reports (contain patient data)
 backend/reports/
+videos
+xrays
 *.pdf
 
 # ============================================
@@ -70,4 +63,15 @@ frontend/.env
 .DS_Store
 Thumbs.db
 
-requirements.txt
+# ============================================
+# Deployment / infra — never commit real credentials
+# ============================================
+# A kubeconfig pulled down locally while following DEPLOYMENT.md's
+# Kubernetes section — grants full cluster access, must never be committed.
+kubeconfig
+*.kubeconfig
+# Local overrides to docker-compose.yml (e.g. real secrets for a one-off
+# test) — docker-compose.yml itself has none and is meant to be committed.
+docker-compose.override.yml
+
+backend/uploads

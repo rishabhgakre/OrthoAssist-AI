@@ -1,0 +1,15 @@
+# Optional — lets you run `kubectl apply -k k8s/` as a single command
+# instead of `kubectl apply -f k8s/` (which also works fine on its own;
+# the numeric filename prefixes already guarantee correct apply order
+# either way — namespace/config/secrets before anything that references
+# them).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - 00-namespace.yaml
+  - 01-backend-configmap.yaml
+  - 02-backend-secret.yaml
+  - 03-postgres.yaml
+  - 04-backend-deployment.yaml
+  - 05-frontend-deployment.yaml
+  - 06-ingress.yaml

@@ -1,0 +1,25 @@
+# Non-secret backend configuration. Secrets (DB password, JWT SECRET_KEY)
+# live in 02-backend-secret.yaml instead — never put those here, ConfigMaps
+# are NOT encrypted at rest the way Secrets are (by most CNI/etcd setups).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: orthoassist
+data:
+  ENVIRONMENT: "production"
+  # Update to your real deployed frontend URL(s), comma-separated for more
+  # than one (e.g. a Vercel production + preview URL). The backend
+  # deliberately refuses to start in production with this left as "*" —
+  # see core/config.py.
+  FRONTEND_ORIGINS: "https://your-frontend.vercel.app"
+  # Matches the mountPath of the PersistentVolumeClaim in
+  # 04-backend-deployment.yaml — XRAY_DIR/VIDEO_DIR derive from this
+  # automatically, nothing else to keep in sync.
+  UPLOAD_DIR: "/data/uploads"
+  CORI_WEIGHT_STRUCTURAL: "0.5"
+  CORI_WEIGHT_FUNCTIONAL: "0.5"
+  # DATABASE_URL is NOT here — it embeds a password, so it belongs in
+  # 02-backend-secret.yaml instead, even though the demo password in that
+  # file is just "postgres". Modeling the real separation matters more
+  # than the demo value being sensitive or not.

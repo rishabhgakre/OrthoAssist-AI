@@ -80,12 +80,10 @@ def detect_bone_region(image_path: str) -> Detection:
     enhanced = enhance_for_detection(original)
 
     result = _run_yolo(model, enhanced)
-    used_enhanced = True
 
     if result is None:
         # Fall back to the raw, unenhanced image
         result = _run_yolo(model, original)
-        used_enhanced = False
 
     if result is None:
         raise ValueError(

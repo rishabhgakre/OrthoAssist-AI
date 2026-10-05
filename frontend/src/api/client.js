@@ -30,7 +30,12 @@ api.interceptors.response.use(
 
 export function assetUrl(path) {
   if (!path) return null
-  const clean = String(path).replace(/^\/+/, '')
+
+  let clean = String(path).replace(/^\/+/, '')
+
+  // Convert Docker filesystem path to public URL path
+  clean = clean.replace(/^app\/uploads\//, 'uploads/')
+
   return API_ORIGIN ? `${API_ORIGIN}/${clean}` : `/${clean}`
 }
 

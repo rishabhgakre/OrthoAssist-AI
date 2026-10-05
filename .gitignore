@@ -40,11 +40,11 @@ xrays
 # ============================================
 # ML model weights (too large for git, download separately)
 # ============================================
-*.pt
+
 *.pth
 *.onnx
 *.h5
-backend/app/ai_structural/weights/*.pt
+
 !backend/app/ai_structural/weights/.gitkeep
 
 # ============================================

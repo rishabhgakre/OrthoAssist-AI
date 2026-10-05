@@ -8,7 +8,7 @@ import axios from 'axios'
 export const API_ORIGIN = import.meta.env.VITE_API_URL || ''
 
 const api = axios.create({
-  baseURL: `${API_ORIGIN}/api`,
+  baseURL: API_ORIGIN,
 })
 
 // Attach the JWT token (if we have one) to every outgoing request
